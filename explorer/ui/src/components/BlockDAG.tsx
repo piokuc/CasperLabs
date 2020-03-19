@@ -37,9 +37,13 @@ export class BlockDAG extends React.Component<Props, {}> {
   xTrans: d3.ScaleLinear<number, number> | null = null;
   yTrans: d3.ScaleLinear<number, number> | null = null;
   initialized = false;
+  private validatorColor: (s: string) => string;
+  private eraColor: (s: string) => string;
 
   constructor(props: Props) {
     super(props);
+    this.validatorColor = consistentColor(d3.schemePaired);
+    this.eraColor = consistentColor(d3.schemeCategory10);
     reaction(() => {
         return this.filteredBlocks();
       }, () => {
@@ -145,8 +149,7 @@ export class BlockDAG extends React.Component<Props, {}> {
     }
     const svg = d3.select(this.svg);
     const hint = d3.select(this.hint);
-    const validatorColor = consistentColor(d3.schemePaired);
-    const eraColor = consistentColor(d3.schemeCategory10);
+
     // See what the actual width and height is.
     const width = $(this.svg!).width()!;
     const height = $(this.svg!).height()!;
@@ -237,12 +240,12 @@ export class BlockDAG extends React.Component<Props, {}> {
       .attr('r', (d: d3Node) =>
         CircleRadius * (isBallot(d.block) ? 0.5 : 1.0))
       .attr('stroke', (d: d3Node) =>
-        selectedId && d.id === selectedId ? '#E00' : eraColor(d.eraId)
+        selectedId && d.id === selectedId ? '#E00' : this.eraColor(d.eraId)
       )
       .attr('stroke-width', (d: d3Node) =>
         selectedId && d.id === selectedId ? '7px' : '4px'
       )
-      .attr('fill', (d: d3Node) => validatorColor(d.validator));
+      .attr('fill', (d: d3Node) => this.validatorColor(d.validator));
 
     // Append a node-label to each node
     const label = node
@@ -522,31 +525,22 @@ const shorten = (d: any, by: number) => {
   return Math.max(0, (length - by) / length);
 };
 
-/** String hash for consistent colors. Same as Java. */
-const hashCode = (s: string) => {
-  let hash = 0;
-  if (s.length === 0) return hash;
-  for (let i = 0; i < s.length; i++) {
-    let chr = s.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-};
-
 const consistentColor = (colors: readonly string[]) => {
   // Display each validator with its own color.
   // https://www.d3-graph-gallery.com/graph/custom_color.html
   // http://bl.ocks.org/curran/3094b37e63b918bab0a06787e161607b
   // This can be used like `color(x.validator)` but it changes depending on which validators are on the screen.
-  // const color = d3.scaleOrdinal(d3.schemeCategory10);
-  // This can be used with a numeric value:
-  // const hashRange: [number, number] = [-2147483648, 2147483647];
-  //   d3.scaleSequential(d3.interpolateSpectral).domain(hashRange),
   const cl = colors.length;
-  return (s: string) => {
-    const h = hashCode(s);
-    const c = Math.abs(h % cl);
-    return colors[c];
+  const colorMap = new Map<string, string>();
+  let currentIndex = Math.floor(Math.random() * cl);
+  return (s: string): string => {
+    if(colorMap.has(s)){
+      return colorMap.get(s)!;
+    }else{
+      const color = colors[currentIndex];
+      currentIndex = (currentIndex + 1) % cl;
+      colorMap.set(s, color);
+      return color;
+    }
   };
 };
