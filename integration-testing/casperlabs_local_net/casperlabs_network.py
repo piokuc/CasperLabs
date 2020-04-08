@@ -127,7 +127,7 @@ class CasperLabsNetwork:
                 # Waiting for the block with transaction that created new account to propagate to all nodes.
                 # Expensive, but some tests may rely on it.
                 wait_for_block_hash_propagated_to_all_nodes(
-                    node.cl_network.docker_nodes, block_hash
+                    node.cl_network.docker_nodes, block_hash, timeout_seconds=10*60
                 )
                 for deploy in node.client.show_deploys(block_hash):
                     assert (
@@ -727,7 +727,7 @@ class MultiNodeJoinedNetwork(CasperLabsNetwork):
 
 class CustomConnectionNetwork(CasperLabsNetwork):
     def create_cl_network(
-        self, node_count: int = 3, network_connections: List[List[int]] = None
+        self, node_count: int = 3, network_connections: List[List[int]] = None, node_env: Dict = None
     ) -> None:
         """
         Allow creation of a network where all nodes are not connected to node-0's network and therefore each other.
@@ -751,6 +751,7 @@ class CustomConnectionNetwork(CasperLabsNetwork):
             node_public_key=kp.public_key,
             network=self.create_docker_network(),
             node_account=kp,
+            node_env=node_env,
         )
         self.add_bootstrap(config)
 
@@ -761,6 +762,7 @@ class CustomConnectionNetwork(CasperLabsNetwork):
                 node_private_key=kp.private_key,
                 network=self.create_docker_network(),
                 node_account=kp,
+                node_env=node_env,
             )
             self.add_cl_node(config, network_with_bootstrap=False)
 
