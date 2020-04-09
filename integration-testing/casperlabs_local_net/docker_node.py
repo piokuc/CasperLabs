@@ -395,6 +395,7 @@ class DockerNode(LoggingDockerBase):
         payment_args: bytes = MAX_PAYMENT_ABI,
         gas_price: int = 1,
         is_deploy_error_check: bool = True,
+        timeout_seconds: int = 10 * 60,
     ) -> str:
         """
         Performs a transfer using the from account if given (or genesis if not)
@@ -442,7 +443,7 @@ class DockerNode(LoggingDockerBase):
 
         client = self.p_client.client
         result = client.wait_for_deploy_processed(
-            deploy_hash, on_error_raise=is_deploy_error_check
+            deploy_hash, on_error_raise=is_deploy_error_check, timeout_seconds=timeout_seconds
         )
         last_processing_result = result.processing_results[0]
         block_hash = last_processing_result.block_info.summary.block_hash.hex()
